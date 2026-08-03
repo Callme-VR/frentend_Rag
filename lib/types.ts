@@ -7,8 +7,8 @@ export interface HealthResponse{
 export interface SearchResultItem{
     rank:number,
     score:number,
-    content:String,
-    metadata:Record<string,any>
+    content:string,
+    metadata:Record<string,string>
     id:string,
 }
 
