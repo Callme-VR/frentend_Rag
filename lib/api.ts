@@ -31,3 +31,4 @@ export async function UploadFiles(files:File[]):Promise<UploadResponse>{
     const reponse=await https.post<UploadResponse>("api//upload",formData,{});
     return reponse.data;
 }
+
