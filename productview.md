@@ -49,7 +49,6 @@
 **[Action: Drop a file onto the upload zone. Click '⚡ Process & Index Documents'. Show the success toast with chunk count.]**
 
 > "The file is uploaded to the backend, which parses it, splits it into chunks, generates embeddings, and stores them in ChromaDB. One file, 15 chunks indexed."
-
 ---
 
 ## 1:30 — 2:15 | Live Demo — Semantic Search
@@ -67,7 +66,6 @@
 
 > "The slider controls how many results I get back. The higher the similarity score, the more relevant the chunk."
 
----
 
 ## 2:15 — 2:45 | Live Demo — Vector Store Inspector
 
