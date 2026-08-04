@@ -47,8 +47,12 @@ export default function SearchPanels({ backendOnline }: Props) {
     try {
       const response = await RunSearch(trimmed, k);
       setResults(response.results);
-    } catch (err: any) {
-      setError(err.message || "An error occurred during the search.");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred during the search."
+      );
     } finally {
       setLoading(false);
     }
@@ -76,7 +80,7 @@ export default function SearchPanels({ backendOnline }: Props) {
               }
             }}
             placeholder="Search information from your documents..."
-            className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm text-black outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           />
 
           <div className="flex items-center gap-4">

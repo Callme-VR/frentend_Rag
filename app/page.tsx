@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import BackendStatus from "@/components/Backendstatus";
 import InspectorPanel from "@/components/Inspector";
@@ -8,12 +8,12 @@ import SearchPanels from "@/components/SearchPanels";
 import UploadPanels from "@/components/UploadPanels";
 
 import { fetchHealth } from "@/lib/api";
+import type { HealthResponse } from "@/lib/types";
 
 type Tab = "search" | "upload" | "inspector";
 
-// If you already have a Health interface in your API file,
-// import it instead of declaring it here.
-type Health = Awaited<ReturnType<typeof fetchHealth>>;
+/** Poll interval for live health / chunk count updates (ms). */
+const HEALTH_POLL_MS = 15_000;
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "search", label: "🔎 Semantic Search" },
@@ -24,65 +24,79 @@ const TABS: { id: Tab; label: string }[] = [
 export default function Home() {
   const [tab, setTab] = useState<Tab>("search");
 
-  const [health, setHealth] = useState<Health | null>(null);
+  const [health, setHealth] = useState<HealthResponse | null>(null);
   const [backendOnline, setBackendOnline] = useState(false);
   const [loadingHealth, setLoadingHealth] = useState(true);
 
-  const loadHealth = useCallback(async () => {
-    setLoadingHealth(true);
+  /** Avoid overlapping health requests. */
+  const inFlight = useRef(false);
+
+  const loadHealth = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
+
+    if (inFlight.current) return;
+    inFlight.current = true;
+
+    if (!silent) {
+      setLoadingHealth(true);
+    }
 
     try {
       const data = await fetchHealth();
-
       setHealth(data);
       setBackendOnline(true);
     } catch (error) {
       console.error("Failed to fetch backend health:", error);
-
       setHealth(null);
       setBackendOnline(false);
     } finally {
       setLoadingHealth(false);
+      inFlight.current = false;
     }
   }, []);
 
-  /* eslint-disable */
+  // Initial load + live polling (no full-page spinner on background polls).
+  // Health is external system state; setState runs only after the async fetch resolves.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- bootstrap external health check
     void loadHealth();
+
+    const id = window.setInterval(() => {
+      void loadHealth({ silent: true });
+    }, HEALTH_POLL_MS);
+
+    return () => window.clearInterval(id);
   }, [loadHealth]);
-  /* eslint-enable */
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-5 py-8">
-      {/* Page Header */}
       <header>
-        <h1 className="text-3xl font-bold text-slate-800">
-          RAG <span className="text-blue-600">System</span>
+        <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
+          RAG <span className="text-blue-600 dark:text-blue-400">System</span>
         </h1>
 
-        <p className="mt-1 text-slate-500">
+        <p className="mt-1 text-slate-500 dark:text-slate-400">
           Upload documents and run semantic similarity searches.
         </p>
       </header>
 
-      {/* Backend Status */}
       <BackendStatus
         online={backendOnline}
         loading={loadingHealth}
         health={health}
-        onRefresh={loadHealth}
+        onRefresh={() => void loadHealth()}
       />
 
-      {/* Navigation Tabs */}
-      <nav className="flex flex-wrap gap-3 rounded-xl border border-slate-300 bg-white p-1.5 shadow-sm">
+      <nav className="flex flex-wrap gap-3 rounded-xl border border-slate-300 bg-white p-1.5 shadow-sm dark:border-slate-600 dark:bg-slate-800">
         {TABS.map((t) => (
           <button
             key={t.id}
+            type="button"
             onClick={() => setTab(t.id)}
             className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
               tab === t.id
                 ? "bg-blue-600 text-white shadow"
-                : "text-slate-600 hover:bg-slate-100"
+                : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
             }`}
           >
             {t.label}
@@ -90,7 +104,6 @@ export default function Home() {
         ))}
       </nav>
 
-      {/* Tab Content */}
       {tab === "search" && (
         <SearchPanels backendOnline={backendOnline} />
       )}
@@ -98,7 +111,7 @@ export default function Home() {
       {tab === "upload" && (
         <UploadPanels
           backendOnline={backendOnline}
-          onIndexed={loadHealth}
+          onIndexed={() => void loadHealth()}
         />
       )}
 
@@ -106,6 +119,8 @@ export default function Home() {
         <InspectorPanel
           backendOnline={backendOnline}
           health={health}
+          loading={loadingHealth}
+          onRefresh={() => void loadHealth()}
         />
       )}
     </main>
