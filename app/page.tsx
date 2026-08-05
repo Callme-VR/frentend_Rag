@@ -70,14 +70,10 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-5 py-8">
-      <header>
+      <header className="flex flex-col items-center">
         <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
-          RAG <span className="text-blue-600 dark:text-blue-400">System</span>
+          DocumentDigger<span className="text-blue-600 dark:text-blue-400">AI</span>
         </h1>
-
-        <p className="mt-1 text-slate-500 dark:text-slate-400">
-          Upload documents and run semantic similarity searches.
-        </p>
       </header>
 
       <BackendStatus
